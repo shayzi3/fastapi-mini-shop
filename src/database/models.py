@@ -1,4 +1,3 @@
-import asyncio
 
 from typing import Annotated
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncAttrs
@@ -11,6 +10,7 @@ from config import secret
 typeNAME = Annotated[str, mapped_column(primary_key=True, nullable=False)]
 typeSTR = Annotated[str, mapped_column(nullable=False)]
 typeTEXT = Annotated[str, mapped_column(Text, nullable=False)]
+typeORDERS = Annotated[str, mapped_column(Text, primary_key=True)]
 
 
 
@@ -33,14 +33,16 @@ class User(Base):
 class Order(Base):
      __tablename__ = 'orders'
      
-     orders: Mapped[typeTEXT]
+     orders: Mapped[typeORDERS]
      orders_names: Mapped[typeTEXT]
      
      
      
 
 class ManageTables:
-     eng = create_async_engine(secret.get_postgresql_url(), echo=True)
+     __url = f'postgresql+asyncpg://{secret.DB_USER}:{secret.DB_PASS}@{secret.DB_HOST}:{secret.DB_PORT}/{secret.DB_NAME}'
+     
+     eng = create_async_engine(__url, echo=True)
      session = async_sessionmaker(eng)
      
      
@@ -62,7 +64,3 @@ async def startUp() -> None:
      manage = ManageTables()
      await manage.create_tables()
      # await manage.drop_tables()
-     
-     
-if __name__ == '__main__':
-     asyncio.run(startUp())
