@@ -1,16 +1,18 @@
+import json
 
 from typing import Annotated
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
-from sqlalchemy import Text
+from sqlalchemy import Text, insert
 
 from config import secret
 
 
 typeNAME = Annotated[str, mapped_column(primary_key=True, nullable=False)]
 typeSTR = Annotated[str, mapped_column(nullable=False)]
-typeTEXT = Annotated[str, mapped_column(Text, nullable=False)]
+typeTEXT = Annotated[str, mapped_column(Text, nullable=True)]
 typeORDERS = Annotated[str, mapped_column(Text, primary_key=True)]
+typeMONEY = Annotated[int, mapped_column(nullable=True)]
 
 
 
@@ -25,8 +27,7 @@ class User(Base):
      name: Mapped[typeNAME]
      password: Mapped[typeSTR]
      orders: Mapped[typeTEXT]
-     status: Mapped[typeSTR]
-     
+     money: Mapped[typeMONEY]
      
      
      
@@ -34,7 +35,7 @@ class Order(Base):
      __tablename__ = 'orders'
      
      orders: Mapped[typeORDERS]
-     orders_names: Mapped[typeTEXT]
+     
      
      
      
@@ -58,9 +59,32 @@ class ManageTables:
                await begin.run_sync(Base.metadata.drop_all)
                
                
+     @classmethod
+     async def new_items_in_order(cls) -> None:
+          # q - quantity banana
+          
+          items = [
+               {'Banana': {'price': 10, 'q': 5}},
+               {'Apple': {'price': 8, 'q': 3}},
+               {'Cherry': {'price': 2, 'q': 6}}
+          ]
+          
+          async with cls.session.begin() as begin:
+               sttm = (
+                    insert(Order).
+                    values(
+                         orders=json.dumps(items)
+                    )
+               )
+               await begin.execute(sttm)
+          
+          
+               
+               
                
                
 async def startUp() -> None:
      manage = ManageTables()
-     await manage.create_tables()
+     # await manage.create_tables()
      # await manage.drop_tables()
+     await manage.new_items_in_order()
