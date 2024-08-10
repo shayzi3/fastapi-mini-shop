@@ -20,7 +20,7 @@ class Checkers(ManageTables):
 
      
      @classmethod
-     async def check_password(cls, name: str, password: str) -> bool | None:
+     async def check_password(cls, name: str, password: str) -> bool:
           async with cls.session() as conn:
                sttm = select(User.password).where(User.name == name)
                
@@ -81,14 +81,41 @@ class Registration(ManageTables):
                          }
                     }
                return None
+          
+          
+     @classmethod
+     async def save_new_password(cls, name: str, new_password: str):
+          async with cls.session.begin() as conn:
+               hash_pass = await auth.get_hashed_password(new_password)
                
+               sttm = (
+                    update(User).
+                    where(User.name == name).
+                    values(password=hash_pass.decode())
+               )
+               await conn.execute(sttm)
+               
+     
+     @classmethod
+     async def save_new_email(cls, name: str, new_email: str):
+          async with cls.session.begin() as conn:
+               sttm = (
+                    update(User).
+                    where(User.name == name).
+                    values(email=new_email)
+               )
+               await conn.execute(sttm)  
           
-          
-          
-     # @classmethod
-     # async def add_items(cls, data: dict) -> None:
-     #      async with cls.session.begin() as conn:
-     #           sttm = select(User.orders).where(User.na)
+     
+     @classmethod
+     async def save_new_name(cls, name: str, new_name: str):
+          async with cls.session.begin() as conn:
+               sttm = (
+                    update(User).
+                    where(User.name == name).
+                    values(name=new_name)
+               )
+               await conn.execute(sttm)  
           
           
 regstr = Registration()

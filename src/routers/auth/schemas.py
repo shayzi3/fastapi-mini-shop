@@ -20,3 +20,18 @@ class Auth(BaseModel):
      name: typeNAME
      password: typePASS
      
+     
+class NewPassword(BaseModel):
+     password: typePASS
+     new_password: typePASS
+     
+     
+class NewName(BaseModel):
+     new_name: typeNAME
+     password: typePASS
+     
+     
+class NewEmail(BaseModel):
+     email: EmailStr
+     password: typePASS
+     
