@@ -1,49 +1,96 @@
 
 
-from typing import Any
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, Response, Depends, HTTPException
 
-from src.database.models import User, ManageTables
-from src.database.base import data_help
-from src.routers.auth.schemas import Registration, ChangeName, ChangePassword
+from src.database.bases.auth_base import regstr, check
+from src.routers.auth.schemas import Reg, Auth
 from src.routers.auth.core import decor
+from auth2 import auth
+
 
 
 router = APIRouter(tags=['Register'])
 
 
-@router.post('/reg/')
-async def register_user(data: Registration):
-     name = await decor.registration_name(arg=data.name)
-     if isinstance(name, dict):
-          return name
-     
-     insert = await data_help.insert_new_data(data=data.model_dump())
-     if insert:
-          return {
-               'status': 200, 
-               'message': 'You success create new account!'
-          }
+async def depend_register_user(data: Reg, response: Response):
+     '''
+          Errors:
           
-     return {
-          'status': 404,
-          'message': 'This name already taken!'
-     }
+          In username must be only accessed symbols! status_name 460
+          Username 3 - 15 letters or numbers. validation routers/auth/schemas.py
+          Password 8 - 20 symbols. validation. routers/auth/schemas.py
+          This name already taken! insert 170
+     '''
+     await decor.registration_name(arg=data.name)
      
+     insert = await regstr.insert_new_data(data=data.model_dump())
+     if insert:
+          token = auth.encode_token(data.name)
+          response.set_cookie(
+               key='access_token', 
+               value=token,
+               httponly=True
+          )
+          return {'access_token': token, 'refresh_token': None}
      
+     raise HTTPException(status_code=170, detail='This name already taken!')
 
-@router.post('/change_name/')
-async def change_user_name(data: ChangeName):
-     result = await data_help.change_nickname(data=data.model_dump())
+
+
+
+async def depend_auth(data: Auth, response: Response):
+     '''
+          Errors:
+          
+          In username must be only accessed symbols! auth/core.py 460
+          Username 3 - 15 letters or numbers. validation routers/auth/schemas.py
+          Password 8 - 20 symbols. validation. routers/auth/schemas.py
+          Invalid name or password. passw 50
+     '''
      
-     if result:
-          return {'status': 200, 'message': f'Your name now {data.new_name}'}
+     await decor.registration_name(arg=data.name)
+     
+     passw = await check.check_password(
+          name=data.name,
+          password=data.password
+     )
+     if not passw:
+          raise HTTPException(status_code=50, detail='Invalid name or password!')
+     
+     token = auth.encode_token(data.name)
+     response.set_cookie(
+          key='access_token', 
+          value=token,
+          httponly=True
+     )
+     return {'access_token': token, 'refresh_token': None}
      
      
-     elif result == False:
-          return {'status': 404, 'message': 'Invalid password!'}
      
      
-     elif result == None:
-          return {'status': 404, 'message': 'Invalid nickname!'}
+async def depend_out_user(response: Response):
+     response.set_cookie(key='access_token', value='')
+     return {'status': 550, 'access_token': None}
+
+
+
+
+@router.post('/reg/')
+async def register_user(returned = Depends(depend_register_user)):
+     return returned
+
+
+@router.post('/auth/')
+async def auth_user(returned = Depends(depend_auth)):
+     return returned
+
+
+@router.get('/out/')
+async def out_user(returned = Depends(depend_out_user)):
+     return returned
+
+
+
+
+     
 

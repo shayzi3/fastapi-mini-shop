@@ -1,27 +1,23 @@
 
 
 from typing import Annotated
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 
 typeNAME = Annotated[str, Field(max_length=15, min_length=3)]
 typePASS = Annotated[str, Field(max_length=20, min_length=8)]
+typeEMAIL = Annotated[EmailStr, Field(min_length=12)]
 
 
 
-class Registration(BaseModel):
+class Reg(BaseModel):
      name: typeNAME
-     password: typePASS     
+     password: typePASS 
+     email: typeEMAIL
      
 
 
-class ChangeName(BaseModel):
+class Auth(BaseModel):
      name: typeNAME
      password: typePASS
-     new_name: typeNAME
      
-     
-     
-class ChangePassword(BaseModel):
-     password: typePASS
-     new_password: typePASS

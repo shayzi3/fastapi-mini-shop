@@ -1,8 +1,10 @@
 import json
-from typing import Any
 
-from src.database.models import User, Order, ManageTables
+from src.database.models import User, ManageTables
 from sqlalchemy import insert, update, select
+
+from src.routers.auth.core import decor
+from auth2 import auth
 
 
 
@@ -21,19 +23,18 @@ class Checkers(ManageTables):
      
      @classmethod
      async def check_password(cls, name: str, password: str) -> bool | None:
-          if await cls.check_name(name):
-               async with cls.session() as conn:
-                    sttm = select().add_columns(User.password).where(User.name == name)
+          async with cls.session() as conn:
+               sttm = select().add_columns(User.password).where(User.name == name)
                     
-                    result = await conn.execute(sttm)
-                    if result.scalar() == password:
-                         return True
-                    return False
-          return None
+               result = await conn.execute(sttm)
+               if result.scalar() == password:
+                    return True
+               return None
+     
 
 
 
-class DataHelper(ManageTables):
+class Registration(ManageTables):
      ch = Checkers()
      
      
@@ -56,25 +57,12 @@ class DataHelper(ManageTables):
           
           
           
-     @classmethod
-     async def change_nickname(cls, data: dict) -> bool:
-          async with cls.session.begin() as conn:
-               res = await cls.ch.check_password(
-                    name=data.get('name'), 
-                    password=data.get('password')
-               )
-               
-               if res:
-                    sttm = (
-                         update(User).
-                         where(User.password == data.get('password')).
-                         values(name=data.get('new_name'))
-                    )
-                    await conn.execute(sttm)
-                    return True
-               return res
-               
           
-               
-               
-data_help = DataHelper()
+     @classmethod
+     async def add_items(cls, data: dict) -> None:
+          async with cls.session.begin() as conn:
+               sttm = select(User.orders).where(User.na)
+          
+          
+regstr = Registration()
+check = Checkers()
