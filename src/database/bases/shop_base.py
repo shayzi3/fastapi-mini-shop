@@ -12,14 +12,16 @@ class Shopping(ManageTables):
      async def get_all_items(cls) -> list[dict]:
           async with cls.session() as conn:
                sttm = text('SELECT * FROM orders')
-               
                response = await conn.execute(sttm)
                
-               dict_ = {}
+               items = {}
                for data in response.fetchall():
-                    dict_[data[0]] = {'price': data[1], 'qua': data[2]}
-                    
-               return dict_
+                    items[data[1]] = {
+                         'ID': data[0],
+                         'Price': data[2],
+                         'Qua': data[3]
+                    }
+               return items
                     
           
      @classmethod
@@ -31,7 +33,13 @@ class Shopping(ManageTables):
                response = response.scalar()
                
                if response:
-                    return {response.item: {'price': response.price, 'qua': response.qua}}
+                    return {response.item: {
+                         'price': response.price, 
+                         'qua': response.qua, 
+                         'id': response.id, 
+                         'seller': response.seller
+                         }
+                    }
                return None
           
           

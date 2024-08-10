@@ -1,22 +1,24 @@
 import time
 
 import jwt
+import bcrypt
 from fastapi import HTTPException
-# from passlib.context import CryptContext # used for hashing the password
 
 from config import Secrets 
 
 
 class Auth:
-    # hasher = CryptContext(schemes=['bcrypt'])
-
-    # def encode_password(self, password):
-    #     return self.hasher.hash(password)
-
-    # def verify_password(self, password, encoded_password):
-    #     return self.hasher.verify(password, encoded_password)
+    
+    @staticmethod
+    async def get_hashed_password(plain_text_password: str):
+        return bcrypt.hashpw(plain_text_password.encode(), bcrypt.gensalt())
 
 
+    @staticmethod
+    async def check_password_hash(plain_text_password: str, hashed_password):
+        return bcrypt.checkpw(plain_text_password.encode(), hashed_password.encode())
+
+    
     @staticmethod
     def encode_token(username):
         payload = {
@@ -32,7 +34,7 @@ class Auth:
 
 
     @staticmethod
-    def decode_token(token) -> str:
+    def decode_token(token) -> dict:
         try:
             payload = jwt.decode(token, Secrets.SECRET, algorithms=['HS256'])
             

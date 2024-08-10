@@ -14,7 +14,7 @@ async def get_items() -> None:
 
 
 
-@router.get('/item/{item}')
+@router.get('/oneitem/')
 async def get_one_item(item: str) -> None:
      res = await shopping.get_one_item_(item)
      
@@ -37,8 +37,6 @@ async def add_item_to_user(item: str, q: int) -> None:
           res['q'] = q
           res['price'] = q * res['price']
           
-          
-     
      return res
 
 

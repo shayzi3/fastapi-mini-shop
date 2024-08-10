@@ -1,18 +1,22 @@
 
+from random import randint
 from typing import Annotated
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
-from sqlalchemy import Text, insert
+from sqlalchemy import BigInteger, Text, insert
 
 from config import secret
 
 
 typeNAME = Annotated[str, mapped_column(primary_key=True, nullable=False)]
-typeSTR = Annotated[str, mapped_column(nullable=False)]
-typeTEXT = Annotated[str, mapped_column(Text, nullable=True)]
-typeITEM = Annotated[str, mapped_column(primary_key=True)]
-typeINT = Annotated[int, mapped_column(nullable=True)]
+typeEMAIL = Annotated[str, mapped_column(nullable=False)]
+typeID = Annotated[int, mapped_column(BigInteger, primary_key=True, unique=True)]
+typeITEM = Annotated[str, mapped_column(nullable=False)]
+typeSELLER = Annotated[str, mapped_column(nullable=False)]
 
+
+typeTEXT = Annotated[str, mapped_column(Text, nullable=True)]
+typeINT = Annotated[int, mapped_column(nullable=True)]
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -24,18 +28,22 @@ class User(Base):
      __tablename__ = 'users'
      
      name: Mapped[typeNAME]
-     password: Mapped[typeSTR]
+     password: Mapped[typeTEXT]
      orders: Mapped[typeTEXT]
      money: Mapped[typeINT]
+     email: Mapped[typeEMAIL]
+     storage: Mapped[typeTEXT]
      
      
      
 class Order(Base):
      __tablename__ = 'orders'
      
+     id: Mapped[typeID]
      item: Mapped[typeITEM]
      price: Mapped[typeINT]
-     qua: Mapped[typeINT]     
+     qua: Mapped[typeINT]    
+     seller: Mapped[typeSELLER] 
      
      
      
@@ -76,7 +84,9 @@ class ManageTables:
                          values(
                               item=item[0],
                               price=item[1],
-                              qua=item[2]
+                              qua=item[2],
+                              id=randint(10, 1000),
+                              seller='Vlados'
                          )
                     )
                     await begin.execute(sttm)
@@ -88,6 +98,6 @@ class ManageTables:
                
 async def startUp() -> None:
      manage = ManageTables()
-     # await manage._create_tables()
-     # await manage._drop_tables()
+     await manage._drop_tables()
+     await manage._create_tables()
      await manage.new_items_in_order()
