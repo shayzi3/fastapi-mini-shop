@@ -1,6 +1,6 @@
 
 
-from fastapi import Request, APIRouter, Depends, HTTPException
+from fastapi import Request, APIRouter, Depends, HTTPException, Response
 
 from auth2 import auth
 from src.database.bases.auth_base import regstr
@@ -10,12 +10,14 @@ from src.database.bases.auth_base import regstr
 router = APIRouter(tags=['Data About User'])
 
 
-async def depend_return_my_data(request: Request):
-     jwt = request.cookies.get('access_token')
+async def depend_return_my_data(request: Request, response: Response):
+     status = await auth.check_refresh_and_access_tokens(
+          access_token=request.cookies.get('access_token'),
+          refresh_token_=request.cookies.get('refresh_token'),
+          response=response
+     )
+     return await regstr.return_data_about_user(status['sub'])
      
-     decode = auth.decode_token(jwt)
-     
-     return await regstr.return_data_about_user(decode['sub'])
 
 
 

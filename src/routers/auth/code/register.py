@@ -16,13 +16,10 @@ async def depend_register_user(data: Reg, response: Response):
      
      insert = await regstr.insert_new_data(data=data.model_dump())
      if insert:
-          token = auth.encode_token(data.name)
-          response.set_cookie(
-               key='access_token', 
-               value=token,
-               httponly=True
+          return await auth.get_access_refresh_tokens(
+               username=data.name, 
+               response=response
           )
-          return {'access_token': token, 'refresh_token': None}
      
      raise HTTPException(status_code=170, detail='This name already taken!')
 
@@ -39,21 +36,19 @@ async def depend_auth(data: Auth, response: Response):
      if passw is False:
           return {'status': 50, 'detail': 'Invalid name or password!'}
 
-     
-     token = auth.encode_token(data.name)
-     response.set_cookie(
-          key='access_token', 
-          value=token,
-          httponly=True
+     return await auth.get_access_refresh_tokens(
+          username=data.name,
+          response=response
      )
-     return {'access_token': token, 'refresh_token': None}
      
      
      
      
 async def depend_out_user(response: Response):
      response.delete_cookie(key='access_token', httponly=True)
-     return {'status': 550, 'access_token': None}
+     response.delete_cookie(key='refresh_token', httponly=True)
+     
+     return {'status': 550, 'access_token': None, 'refresh_token': None}
 
 
 
