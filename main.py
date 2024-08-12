@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from src.database.models import startUp
 
 from src.routers.auth.code import register, data_user, changers
-from src.routers.magazine import shopp
+from src.routers.magazine.code import shopp
 
 
 app = FastAPI()

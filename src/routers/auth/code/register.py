@@ -52,19 +52,19 @@ async def depend_out_user(response: Response):
 
 
 
-@router.post('/reg/')
+@router.post('/api/reg/')
 async def register_user(returned = Depends(depend_register_user)):
      return returned
 
 
 
-@router.post('/auth/')
+@router.post('/api/auth/')
 async def auth_user(returned = Depends(depend_auth)):
      return returned
 
 
 
-@router.get('/out/')
+@router.get('/api/out/')
 async def out_user(returned = Depends(depend_out_user)):
      return returned
 

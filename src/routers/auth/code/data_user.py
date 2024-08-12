@@ -30,12 +30,12 @@ async def depend_get_user(user_name: str):
      
 
 
-@router.get('/me/')
+@router.get('/api/me/')
 async def return_my_data(returned = Depends(depend_return_my_data)):
      return returned
 
 
 
-@router.get('/user/')
+@router.get('/api/user/')
 async def get_user(returned = Depends(depend_get_user)):
      return returned

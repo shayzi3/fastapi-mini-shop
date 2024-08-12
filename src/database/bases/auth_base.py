@@ -35,7 +35,7 @@ class Checkers(ManageTables):
                     return hasher
                return False
           
-
+ 
 
 
 class Registration(ManageTables):
@@ -53,10 +53,9 @@ class Registration(ManageTables):
                          values(
                               name=data.get('name'), 
                               password=hash_pass.decode(), 
-                              orders=json.dumps([]),
                               money=10,
                               email=data.get('email'),
-                              storage=json.dumps([])
+                              storage=json.dumps({})
                          )
                     )
                     await conn.execute(sttm)
@@ -116,7 +115,6 @@ class Registration(ManageTables):
                     values(name=new_name)
                )
                await conn.execute(sttm)  
-          
           
 regstr = Registration()
 check = Checkers()

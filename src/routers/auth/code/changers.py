@@ -79,18 +79,18 @@ async def depend_name_change(data: NewName, request: Request, response: Response
 
 
 
-@router.post('/change_password/')
+@router.post('/api/change_password/')
 async def password_change(returned = Depends(depend_password_change)):
      return returned
 
 
 
-@router.post('/change_email/')
+@router.post('/api/change_email/')
 async def email_change(returned = Depends(depend_email_change)):
      return returned
 
 
 
-@router.post('/change_name/')
+@router.post('/api/change_name/')
 async def name_change(returned = Depends(depend_name_change)):
      return returned

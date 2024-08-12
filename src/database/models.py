@@ -29,7 +29,6 @@ class User(Base):
      
      name: Mapped[typeNAME]
      password: Mapped[typeTEXT]
-     orders: Mapped[typeTEXT]
      money: Mapped[typeINT]
      email: Mapped[typeEMAIL]
      storage: Mapped[typeTEXT]
@@ -42,16 +41,14 @@ class Order(Base):
      id: Mapped[typeID]
      item: Mapped[typeITEM]
      price: Mapped[typeINT]
-     qua: Mapped[typeINT]    
-     seller: Mapped[typeSELLER] 
-     
+     qua: Mapped[typeINT]         
      
      
 
 class ManageTables:
      __url = f'postgresql+asyncpg://{secret.DB_USER}:{secret.DB_PASS}@{secret.DB_HOST}:{secret.DB_PORT}/{secret.DB_NAME}'
      
-     eng = create_async_engine(__url, echo=True)
+     eng = create_async_engine(__url)
      session = async_sessionmaker(eng)
      
      
@@ -85,8 +82,7 @@ class ManageTables:
                               item=item[0],
                               price=item[1],
                               qua=item[2],
-                              id=randint(10, 1000),
-                              seller='Vlados'
+                              id=randint(10, 1000)
                          )
                     )
                     await begin.execute(sttm)
