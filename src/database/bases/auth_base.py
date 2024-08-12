@@ -53,7 +53,7 @@ class Registration(ManageTables):
                          values(
                               name=data.get('name'), 
                               password=hash_pass.decode(), 
-                              money=10,
+                              money=100,
                               email=data.get('email'),
                               storage=json.dumps({})
                          )
@@ -66,7 +66,7 @@ class Registration(ManageTables):
      @classmethod
      async def return_data_about_user(cls, username: str) -> dict:
           async with cls.session() as conn:
-               sttm = select(User.name, User.email).where(User.name == username)
+               sttm = select(User.name, User.email, User.money, User.storage).where(User.name == username)
                
                result = await conn.execute(sttm)
                result = result.all()
@@ -76,7 +76,9 @@ class Registration(ManageTables):
                          'status': 700,
                          'detail': {
                               'name': result[0][0],
-                              'email': result[0][1]
+                              'email': result[0][1],
+                              'money': result[0][2],
+                              'storage': json.loads(result[0][3])
                          }
                     }
                return None

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, Depends, Response
 from auth2 import auth
 from src.routers.auth.schemas import NewPassword, NewEmail, NewName
 from src.database.bases.auth_base import check, regstr
+from src.routers.auth.core import decor
 
 
 
@@ -56,6 +57,9 @@ async def depend_name_change(data: NewName, request: Request, response: Response
           access_token=request.cookies.get('access_token'),
           refresh_token_=request.cookies.get('refresh_token'),
           response=response
+     )
+     await decor.registration_name(
+          arg=data.new_name
      )
      ps = await check.check_password(
           name=status['sub'],

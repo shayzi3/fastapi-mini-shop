@@ -1,7 +1,8 @@
 import json
 from typing import Any
 
-from sqlalchemy import select, update, text
+from fastapi import HTTPException
+from sqlalchemy import select, update, text, delete
 
 from src.database.models import Order, User, ManageTables
 
@@ -49,7 +50,7 @@ class Shopping(ManageTables):
      @classmethod
      async def check_quantity(cls, q: int, item_id: int) -> None:
           async with cls.session() as conn:
-               sttm = select(Order.qua).where(Order.id == item_id)
+               sttm = select(Order.qua).where(Order.id == int(item_id))
                response = await conn.execute(sttm)
                
                quantity = response.scalar()               
@@ -60,6 +61,7 @@ class Shopping(ManageTables):
           
           
 class ShopAtUser(ManageTables):
+     shop = Shopping()
      
      @classmethod
      async def update_storage_at_user(cls, items: dict, username: str, items_key: int) -> dict:
@@ -87,7 +89,7 @@ class ShopAtUser(ManageTables):
           
           
      @classmethod
-     async def check_quantity_at_user(cls, items_id: list[int], q: int, username: str) -> tuple:
+     async def check_quantity_at_user(cls, items_id: list[int], username: str) -> tuple:
           async with cls.session.begin() as conn:
                sttm = select(User.storage).where(User.name == username)
                response = await conn.execute(sttm)
@@ -133,8 +135,77 @@ class ShopAtUser(ManageTables):
                          result_user[key] = 'Нет в наличии :/'
                
                return result_user
+          
+          
+     @classmethod
+     async def get_balance(cls, username: str) -> int:
+          async with cls.session() as conn:
+               sttm = select(User.money).where(User.name == username)
+               response = await conn.execute(sttm)
                
-                    
+               return response.scalar()
+          
+          
+     @classmethod
+     async def update_balance_at_user(cls, username: str, user_balance: int, price: int):
+          async with cls.session.begin() as conn:
+               sttm = (
+                    update(User).
+                    where(User.name == username).
+                    values(money = user_balance - price)
+               )
+               await conn.execute(sttm)
+               
+               
+     @classmethod
+     async def update_quantity(cls, q: int, item_id: int):
+          async with cls.session.begin() as conn:
+               sttm = select(Order.qua).where(Order.id == int(item_id))
+               response = await conn.execute(sttm)
+               
+               result = response.scalar() - q
+               sttm = (
+                    update(Order).
+                    where(Order.id == int(item_id)).
+                    values(qua = result)
+               )
+               if result <= 0:
+                    sttm = (
+                         delete(Order).
+                         where(Order.id == int(item_id))
+                    )
+               await conn.execute(sttm)
+          
+          
+     @classmethod
+     async def bougt_item(cls, item: str, username: str) -> dict:
+          balance = await cls.get_balance(username)
+          storage = await cls.get_my_storage(username)
+          
+          if item not in storage.keys():
+               raise HTTPException(status_code=711, detail='Item was not found in your storage!')
+               
+          if storage[item]['price'] > balance:
+               raise HTTPException(status_code=680, detail='Not enough money!')
+          
+          qua = await cls.shop.check_quantity(q=storage[item]['qua'], item_id=item)
+          if not qua:
+               raise HTTPException(status_code=666, detail='The store has less quantity')
+          
+          await cls.update_balance_at_user(
+               username=username, 
+               user_balance=balance, 
+               price=storage[item]['price']
+          )
+          await cls.update_quantity(
+               q=storage[item]['qua'],
+               item_id=item
+          )
+          await cls.check_quantity_at_user(
+               items_id=[int(item)],
+               username=username
+          )
+          return {'status': 111, 'detail': f'Item {item} bought success!'}
           
 shopping = Shopping()
 user_shop = ShopAtUser()

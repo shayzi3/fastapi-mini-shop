@@ -52,8 +52,7 @@ async def depend_add_item_to_user(
 async def depend_del_item_at_user(
      items_id: list[int],
      request: Request,
-     response: Response,
-     q: int = 1
+     response: Response
 ):
      status = await auth.check_refresh_and_access_tokens(
           access_token=request.cookies.get('access_token'),
@@ -62,7 +61,6 @@ async def depend_del_item_at_user(
      )
      return await user_shop.check_quantity_at_user(
           items_id=items_id,
-          q=q,
           username=status['sub']
      )
 
