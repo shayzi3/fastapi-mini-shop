@@ -92,8 +92,8 @@ class ManageTables:
                
                
                
-async def startUp() -> None:
-     manage = ManageTables()
-     await manage._drop_tables()
-     await manage._create_tables()
-     await manage.new_items_in_order()
+# async def startUp() -> None:
+#      manage = ManageTables()
+#      await manage._drop_tables()
+#      await manage._create_tables()
+#      await manage.new_items_in_order()

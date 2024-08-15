@@ -1,6 +1,6 @@
 
 
-from fastapi import APIRouter, Request, Response, HTTPException, Depends
+from fastapi import APIRouter, Request, Response, Depends
 
 from auth2 import auth
 from src.database.bases.shop_base import user_shop
@@ -10,7 +10,7 @@ from src.database.bases.shop_base import user_shop
 router = APIRouter(tags=['Buy Item'])
 
 
-async def depend_user_buy_items(item_id: str, request: Request, response: Response):
+async def depend_user_buy_items(item_id: int, request: Request, response: Response) -> dict:
      status = await auth.check_refresh_and_access_tokens(
           access_token=request.cookies.get('access_token'),
           refresh_token_=request.cookies.get('refresh_token'),

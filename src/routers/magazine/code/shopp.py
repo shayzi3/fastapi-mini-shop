@@ -8,7 +8,7 @@ from auth2 import auth
 router = APIRouter(tags=['Shop'])
 
 
-async def depend_get_items(item_id: int = None):
+async def depend_get_items(item_id: int = None) -> dict:
      if item_id:
           res = await shopping.get_one_item_(item_id)
                
@@ -16,7 +16,7 @@ async def depend_get_items(item_id: int = None):
           return await shopping.get_all_items()
                
      if not res:
-          raise HTTPException(status_code=355, detail='Invalid item!')
+          raise HTTPException(status_code=446, detail='Invalid item!')
      return res
 
 
@@ -26,14 +26,14 @@ async def depend_add_item_to_user(
      request: Request, 
      response: Response,
      q: int = 1
-):
+) -> dict:
      res = await shopping.get_one_item_(item_id)
      
      if res:
           response = await shopping.check_quantity(q, item_id)
           
           if not response: 
-               raise HTTPException(status_code=544, detail='Invalid quantity!')
+               raise HTTPException(status_code=447, detail='Invalid quantity!')
           
           status = await auth.check_refresh_and_access_tokens(
                access_token=request.cookies.get('access_token'),
@@ -45,7 +45,7 @@ async def depend_add_item_to_user(
           res[item_id]['price'] = q * res[item_id]['price']
           
           return await user_shop.update_storage_at_user(items=res, username=status['sub'], items_key=item_id)
-     raise HTTPException(status_code=355, detail='Invalid item!')
+     raise HTTPException(status_code=446, detail='Invalid item!')
 
 
 
@@ -53,7 +53,7 @@ async def depend_del_item_at_user(
      items_id: list[int],
      request: Request,
      response: Response
-):
+) -> dict:
      status = await auth.check_refresh_and_access_tokens(
           access_token=request.cookies.get('access_token'),
           refresh_token_=request.cookies.get('refresh_token'),
@@ -65,13 +65,15 @@ async def depend_del_item_at_user(
      )
 
 
-async def depend_get_storage(request: Request, response: Response):
+
+async def depend_get_storage(request: Request, response: Response) -> dict:
      status = await auth.check_refresh_and_access_tokens(
           access_token=request.cookies.get('access_token'),
           refresh_token_=request.cookies.get('refresh_token'),
           response=response
      )
      return await user_shop.get_my_storage(username=status['sub'])
+     
      
 
 

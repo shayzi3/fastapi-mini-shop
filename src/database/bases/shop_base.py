@@ -11,7 +11,7 @@ class Shopping(ManageTables):
      
      
      @classmethod
-     async def get_all_items(cls) -> list[dict]:
+     async def get_all_items(cls) -> dict:
           async with cls.session() as conn:
                sttm = text('SELECT * FROM orders')
                response = await conn.execute(sttm)
@@ -28,7 +28,7 @@ class Shopping(ManageTables):
                
           
      @classmethod
-     async def get_one_item_(cls, item_id: int) -> dict:
+     async def get_one_item_(cls, item_id: int) -> dict | None:
           async with cls.session() as conn:
                sttm = select(Order).where(Order.id == item_id)
                response = await conn.execute(sttm)
@@ -48,7 +48,7 @@ class Shopping(ManageTables):
           
           
      @classmethod
-     async def check_quantity(cls, q: int, item_id: int) -> None:
+     async def check_quantity(cls, q: int, item_id: int) -> None | bool:
           async with cls.session() as conn:
                sttm = select(Order.qua).where(Order.id == int(item_id))
                response = await conn.execute(sttm)
@@ -77,19 +77,18 @@ class ShopAtUser(ManageTables):
                     'qua': key['qua'],
                     'name': key['name']
                }
-               
                sttm = (
                     update(User).
                     where(User.name == username).
                     values(storage=json.dumps(storage))
                )
                await conn.execute(sttm)
-          return {'status': 980, 'detail': 'Success add item in storage!'}
+          return {'status': 212, 'detail': 'Success add item in storage!'}
           
           
           
      @classmethod
-     async def check_quantity_at_user(cls, items_id: list[int], username: str) -> tuple:
+     async def check_quantity_at_user(cls, items_id: list[int], username: str) -> dict:
           async with cls.session.begin() as conn:
                sttm = select(User.storage).where(User.name == username)
                response = await conn.execute(sttm)
@@ -102,7 +101,7 @@ class ShopAtUser(ManageTables):
                
                deleter = []
                for item in items_id:
-                    if item in result_base:
+                    if item in result_base and str(item) in result.keys():
                          del result[str(item)]
                          deleter.append(item)
                     
@@ -111,9 +110,8 @@ class ShopAtUser(ManageTables):
                     where(User.name == username).
                     values(storage=json.dumps(result))
                )
-               await conn.execute(sttm)
-                         
-               return {'status': 462, 'delete_items': deleter}
+               await conn.execute(sttm)      
+          return {'status': 213, 'delete_items': deleter}
                
               
                
@@ -124,17 +122,16 @@ class ShopAtUser(ManageTables):
                sttm = select(User.storage).where(User.name == username)
                response = await conn.execute(sttm)   # Storage user
                
-               sttm_base = text('SELECT id FROM orders')
+               sttm_base = select(Order.id)
                response_base = await conn.execute(sttm_base)   # Items at server
                
                result_user: dict = json.loads(response.scalar())
-               result_server: list = response_base.scalars().all()
+               result_server: list[int] = response_base.scalars().all()
                
                for key in result_user.keys():
                     if int(key) not in result_server:
                          result_user[key] = 'Нет в наличии :/'
-               
-               return result_user
+          return result_user
           
           
      @classmethod
@@ -147,7 +144,7 @@ class ShopAtUser(ManageTables):
           
           
      @classmethod
-     async def update_balance_at_user(cls, username: str, user_balance: int, price: int):
+     async def update_balance_at_user(cls, username: str, user_balance: int, price: int) -> None:
           async with cls.session.begin() as conn:
                sttm = (
                     update(User).
@@ -158,54 +155,55 @@ class ShopAtUser(ManageTables):
                
                
      @classmethod
-     async def update_quantity(cls, q: int, item_id: int):
+     async def update_quantity(cls, q: int, item_id: int) -> None:
           async with cls.session.begin() as conn:
-               sttm = select(Order.qua).where(Order.id == int(item_id))
+               sttm = select(Order.qua).where(Order.id == item_id)
                response = await conn.execute(sttm)
                
                result = response.scalar() - q
                sttm = (
                     update(Order).
-                    where(Order.id == int(item_id)).
+                    where(Order.id == item_id).
                     values(qua = result)
                )
                if result <= 0:
                     sttm = (
                          delete(Order).
-                         where(Order.id == int(item_id))
+                         where(Order.id == item_id)
                     )
                await conn.execute(sttm)
           
           
      @classmethod
-     async def bougt_item(cls, item: str, username: str) -> dict:
+     async def bougt_item(cls, item: int, username: str) -> dict:
           balance = await cls.get_balance(username)
           storage = await cls.get_my_storage(username)
           
-          if item not in storage.keys():
-               raise HTTPException(status_code=711, detail='Item was not found in your storage!')
+          if str(item) not in storage.keys():
+               raise HTTPException(status_code=448, detail='Item was not found in your storage!')
                
-          if storage[item]['price'] > balance:
-               raise HTTPException(status_code=680, detail='Not enough money!')
+          if storage[str(item)]['price'] > balance:
+               raise HTTPException(status_code=449, detail='Not enough money!')
           
-          qua = await cls.shop.check_quantity(q=storage[item]['qua'], item_id=item)
+          qua = await cls.shop.check_quantity(q=storage[str(item)]['qua'], item_id=item)
           if not qua:
-               raise HTTPException(status_code=666, detail='The store has less quantity')
+               raise HTTPException(status_code=450, detail='The store has less quantity.')
           
           await cls.update_balance_at_user(
                username=username, 
                user_balance=balance, 
-               price=storage[item]['price']
+               price=storage[str(item)]['price']
           )
           await cls.update_quantity(
-               q=storage[item]['qua'],
+               q=storage[str(item)]['qua'],
                item_id=item
           )
           await cls.check_quantity_at_user(
-               items_id=[int(item)],
+               items_id=[item],
                username=username
           )
-          return {'status': 111, 'detail': f'Item {item} bought success!'}
+          return {'status': 214, 'detail': f'Item {item} bought success!'}
+          
           
 shopping = Shopping()
 user_shop = ShopAtUser()

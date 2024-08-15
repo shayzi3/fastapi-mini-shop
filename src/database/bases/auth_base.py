@@ -1,5 +1,7 @@
 import json
 
+from fastapi import HTTPException
+
 from src.database.models import User, ManageTables
 from sqlalchemy import insert, update, select
 from auth2 import auth
@@ -23,8 +25,8 @@ class Checkers(ManageTables):
      async def check_password(cls, name: str, password: str) -> bool:
           async with cls.session() as conn:
                sttm = select(User.password).where(User.name == name)
-               
                result = await conn.execute(sttm)
+               
                result = result.scalar()
                
                if result:
@@ -64,28 +66,28 @@ class Registration(ManageTables):
           
           
      @classmethod
-     async def return_data_about_user(cls, username: str) -> dict:
+     async def return_data_about_user(cls, username: str) -> dict | None:
           async with cls.session() as conn:
-               sttm = select(User.name, User.email, User.money, User.storage).where(User.name == username)
+               sttm = select(User).where(User.name == username)
                
                result = await conn.execute(sttm)
-               result = result.all()
+               result = result.scalar()
                
                if result:
                     return {
-                         'status': 700,
+                         'status': 208,
                          'detail': {
-                              'name': result[0][0],
-                              'email': result[0][1],
-                              'money': result[0][2],
-                              'storage': json.loads(result[0][3])
+                              'name': result.name,
+                              'email': result.email,
+                              'money': result.money,
+                              'storage': json.loads(result.storage)
                          }
                     }
                return None
           
           
      @classmethod
-     async def save_new_password(cls, name: str, new_password: str):
+     async def save_new_password(cls, name: str, new_password: str) -> dict:
           async with cls.session.begin() as conn:
                hash_pass = await auth.get_hashed_password(new_password)
                
@@ -95,10 +97,12 @@ class Registration(ManageTables):
                     values(password=hash_pass.decode())
                )
                await conn.execute(sttm)
+          return {'status': 209,'detail': 'Password changed success!'}
+          
                
      
      @classmethod
-     async def save_new_email(cls, name: str, new_email: str):
+     async def save_new_email(cls, name: str, new_email: str) -> dict:
           async with cls.session.begin() as conn:
                sttm = (
                     update(User).
@@ -106,17 +110,27 @@ class Registration(ManageTables):
                     values(email=new_email)
                )
                await conn.execute(sttm)  
+          return {'status': 210, 'detail': 'Email changed success!'}
+
+               
           
      
      @classmethod
-     async def save_new_name(cls, name: str, new_name: str):
+     async def save_new_name(cls, name: str, new_name: str) -> dict:
           async with cls.session.begin() as conn:
+               if await cls.ch.check_name(new_name):
+                    raise HTTPException(status_code=440, detail='This name already taken!')
+                    
                sttm = (
                     update(User).
                     where(User.name == name).
                     values(name=new_name)
                )
                await conn.execute(sttm)  
+          return {'status': 211, 'detail': 'Name changed success!'}
+               
+          
+          
           
 regstr = Registration()
 check = Checkers()

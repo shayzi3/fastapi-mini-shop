@@ -40,7 +40,7 @@ class Auth:
             payload = jwt.decode(token, Secrets.SECRET, algorithms=['HS256'])
             
             if payload['scope'] != 'access_token':
-                raise HTTPException(status_code=245, detail='Scope for token invalid!')
+                raise HTTPException(status_code=402, detail='Scope for token invalid!')
                 
             return payload 
         
@@ -68,7 +68,7 @@ class Auth:
             payload = jwt.decode(refresh_token, Secrets.SECRET, algorithms=['HS256'])
             
             if payload['scope'] != 'refresh_token':
-                raise HTTPException(status_code=246, detail='Scope for token invalid!')
+                raise HTTPException(status_code=402, detail='Scope for token invalid!')
             
             new_token = cls.encode_token(payload['sub'])
             return new_token
@@ -94,7 +94,7 @@ class Auth:
             httponly=True,
             expires=18000
         )
-        return {'status': 101, 'access_token': token_access, 'refresh_token': token_refresh}
+        return {'status': 205, 'detail': 'Success!'}
     
     
     @classmethod
@@ -106,7 +106,7 @@ class Auth:
     ) -> dict:
         new_token = cls.refresh_token(refresh_token_)
         decode = cls.decode_token(access_token)
-     
+      
         # Access token expired
         if 'error' in decode.keys():
             response.set_cookie(

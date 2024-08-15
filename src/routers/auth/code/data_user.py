@@ -10,7 +10,7 @@ from src.database.bases.auth_base import regstr
 router = APIRouter(tags=['Data About User'])
 
 
-async def depend_return_my_data(request: Request, response: Response):
+async def depend_return_my_data(request: Request, response: Response) -> dict:
      status = await auth.check_refresh_and_access_tokens(
           access_token=request.cookies.get('access_token'),
           refresh_token_=request.cookies.get('refresh_token'),
@@ -21,12 +21,12 @@ async def depend_return_my_data(request: Request, response: Response):
 
 
 
-async def depend_get_user(user_name: str):
+async def depend_get_user(user_name: str) -> dict:
      get = await regstr.return_data_about_user(user_name)
      
      if isinstance(get, dict):
           return get
-     raise HTTPException(status_code=301, detail='User was not found!')
+     raise HTTPException(status_code=444, detail='User was not found!')
      
 
 

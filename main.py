@@ -1,8 +1,8 @@
-import asyncio
+# import asyncio
 import uvicorn
 
 from fastapi import FastAPI
-from src.database.models import startUp
+# from src.database.models import startUp
 
 from src.routers.auth.code import register, data_user, changers
 from src.routers.magazine.code import shopp, buy
