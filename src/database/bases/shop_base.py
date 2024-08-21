@@ -1,5 +1,4 @@
 import json
-from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import select, update, text, delete
@@ -28,21 +27,23 @@ class Shopping(ManageTables):
                
           
      @classmethod
-     async def get_one_item_(cls, item_id: int) -> dict | None:
+     async def get_one_item_(cls, item_id: int | None = None) -> dict | None:
           async with cls.session() as conn:
-               sttm = select(Order).where(Order.id == item_id)
-               response = await conn.execute(sttm)
-               
-               result = response.scalar()
-               if result:
-                    items = {
-                         result.id: {
-                              'price': result.price,
-                              'qua': result.qua,
-                              'name': result.item
+               if item_id:
+                    sttm = select(Order).where(Order.id == item_id)
+                    response = await conn.execute(sttm)
+                    
+                    result = response.scalar()
+                    if result:
+                         items = {
+                              result.id: {
+                                   'price': result.price,
+                                   'qua': result.qua,
+                                   'name': result.item
+                              }
                          }
-                    }
-                    return items
+                         return items
+                    return ()
                return None
           
           
@@ -60,7 +61,7 @@ class Shopping(ManageTables):
            
           
           
-class ShopAtUser(ManageTables):
+class UserShop(ManageTables):
      shop = Shopping()
      
      @classmethod
@@ -84,6 +85,7 @@ class ShopAtUser(ManageTables):
                )
                await conn.execute(sttm)
           return {'status': 212, 'detail': 'Success add item in storage!'}
+          
           
           
           
@@ -116,6 +118,7 @@ class ShopAtUser(ManageTables):
               
                
                
+               
      @classmethod
      async def get_my_storage(cls, username: str) -> dict:
           async with cls.session() as conn:
@@ -132,6 +135,7 @@ class ShopAtUser(ManageTables):
                     if int(key) not in result_server:
                          result_user[key] = 'Нет в наличии :/'
           return result_user
+          
           
           
      @classmethod
@@ -181,9 +185,15 @@ class ShopAtUser(ManageTables):
           
           if str(item) not in storage.keys():
                raise HTTPException(status_code=448, detail='Item was not found in your storage!')
+          
+          
+          if isinstance(storage[str(item)], str):
+               raise HTTPException(status_code=451, detail='Item was finished...')
+               
                
           if storage[str(item)]['price'] > balance:
                raise HTTPException(status_code=449, detail='Not enough money!')
+          
           
           qua = await cls.shop.check_quantity(q=storage[str(item)]['qua'], item_id=item)
           if not qua:
@@ -205,5 +215,6 @@ class ShopAtUser(ManageTables):
           return {'status': 214, 'detail': f'Item {item} bought success!'}
           
           
+          
 shopping = Shopping()
-user_shop = ShopAtUser()
+user_shop = UserShop()

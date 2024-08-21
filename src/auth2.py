@@ -1,24 +1,28 @@
-import datetime
 import time
 
 import jwt
 import bcrypt
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Response, Request
 
 from config import Secrets 
 
 
-class Auth:
+
+class HashedPasswords:
     
     @staticmethod
     async def get_hashed_password(plain_text_password: str):
-        return bcrypt.hashpw(plain_text_password.encode(), bcrypt.gensalt())
+        return bcrypt.hashpw(plain_text_password.encode(), bcrypt.gensalt()).decode()
 
 
     @staticmethod
     async def check_password_hash(plain_text_password: str, hashed_password):
         return bcrypt.checkpw(plain_text_password.encode(), hashed_password.encode())
 
+
+
+
+class AuthJWT:
     
     @staticmethod
     def encode_token(username):
@@ -100,12 +104,11 @@ class Auth:
     @classmethod
     async def check_refresh_and_access_tokens(
         cls, 
-        access_token, 
-        refresh_token_, 
+        request: Request, 
         response: Response
     ) -> dict:
-        new_token = cls.refresh_token(refresh_token_)
-        decode = cls.decode_token(access_token)
+        new_token = cls.refresh_token(request.cookies.get('refresh_token'))
+        decode = cls.decode_token(request.cookies.get('access_token'))
       
         # Access token expired
         if 'error' in decode.keys():
@@ -118,4 +121,15 @@ class Auth:
         return decode
         
         
-auth = Auth()
+    @staticmethod
+    async def cookies_delete(request: Request, response: Response) -> dict:
+        if request.cookies.get('access_token') and request.cookies.get('refresh_token'):
+            response.delete_cookie(key='access_token', httponly=True)
+            response.delete_cookie(key='refresh_token', httponly=True)
+            
+            return {'status': 207, 'access_token': None, 'refresh_token': None}
+        raise HTTPException(status_code=443, detail='You dont auth.')
+    
+        
+auth = AuthJWT()
+hashed = HashedPasswords()

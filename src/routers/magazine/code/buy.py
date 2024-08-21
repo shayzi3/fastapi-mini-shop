@@ -1,25 +1,15 @@
 
 
-from fastapi import APIRouter, Request, Response, Depends
+from fastapi import APIRouter, Depends
 
-from auth2 import auth
-from src.database.bases.shop_base import user_shop
-
+from src.routers.magazine.depend.depend_buy import depend_user_buy_items
 
 
-router = APIRouter(tags=['Buy Item'])
+
+router = APIRouter(tags=['Buy Item'], prefix='/api/v1')
 
 
-async def depend_user_buy_items(item_id: int, request: Request, response: Response) -> dict:
-     status = await auth.check_refresh_and_access_tokens(
-          access_token=request.cookies.get('access_token'),
-          refresh_token_=request.cookies.get('refresh_token'),
-          response=response
-     )
-     return await user_shop.bougt_item(item=item_id, username=status['sub'])
-
-
-@router.post('/api/buy_item/{item_id}')
+@router.post('/buy_item/{item_id}')
 async def user_buy_items(returned = Depends(depend_user_buy_items)):
      return returned
      

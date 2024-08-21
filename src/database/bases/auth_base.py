@@ -3,12 +3,14 @@ import json
 from fastapi import HTTPException
 
 from src.database.models import User, ManageTables
-from sqlalchemy import insert, update, select
-from auth2 import auth
+from sqlalchemy import insert, update, select, delete
+from src.auth2 import hashed
+from src.routers.auth.schemas import Reg
+from src.database.bases.shop_base import user_shop
 
 
 
-class Checkers(ManageTables):
+class DataCheckers(ManageTables):
          
                
      @classmethod
@@ -30,7 +32,7 @@ class Checkers(ManageTables):
                result = result.scalar()
                
                if result:
-                    hasher = await auth.check_password_hash(
+                    hasher = await hashed.check_password_hash(
                          plain_text_password=password,
                          hashed_password=result
                     )
@@ -40,23 +42,25 @@ class Checkers(ManageTables):
  
 
 
-class Registration(ManageTables):
-     ch = Checkers()
+class DataBase(ManageTables):
+     ch = DataCheckers()
      
      
      @classmethod
-     async def insert_new_data(cls, data: dict[str, str]) -> bool:
+     async def insert_new_data(cls, data: Reg) -> bool:
           async with cls.session.begin() as conn:
-               if not await cls.ch.check_name(data.get('name')):
-                    hash_pass = await auth.get_hashed_password(data.get('password'))
+               name_exists =  await cls.ch.check_name(data.name)
+               
+               if not name_exists:
+                    hash_pass = await hashed.get_hashed_password(data.password)
                     
                     sttm = (
                          insert(User).
                          values(
-                              name=data.get('name'), 
-                              password=hash_pass.decode(), 
+                              name=data.name, 
+                              password=hash_pass, 
                               money=100,
-                              email=data.get('email'),
+                              email=data.email,
                               storage=json.dumps({})
                          )
                     )
@@ -66,9 +70,9 @@ class Registration(ManageTables):
           
           
      @classmethod
-     async def return_data_about_user(cls, username: str) -> dict | None:
+     async def return_data_about_user(cls, name: str) -> dict | None:
           async with cls.session() as conn:
-               sttm = select(User).where(User.name == username)
+               sttm = select(User).where(User.name == name)
                
                result = await conn.execute(sttm)
                result = result.scalar()
@@ -80,7 +84,7 @@ class Registration(ManageTables):
                               'name': result.name,
                               'email': result.email,
                               'money': result.money,
-                              'storage': json.loads(result.storage)
+                              'storage': await user_shop.get_my_storage(name)
                          }
                     }
                return None
@@ -89,12 +93,12 @@ class Registration(ManageTables):
      @classmethod
      async def save_new_password(cls, name: str, new_password: str) -> dict:
           async with cls.session.begin() as conn:
-               hash_pass = await auth.get_hashed_password(new_password)
+               hash_pass = await hashed.get_hashed_password(new_password)
                
                sttm = (
                     update(User).
                     where(User.name == name).
-                    values(password=hash_pass.decode())
+                    values(password=hash_pass)
                )
                await conn.execute(sttm)
           return {'status': 209,'detail': 'Password changed success!'}
@@ -128,9 +132,22 @@ class Registration(ManageTables):
                )
                await conn.execute(sttm)  
           return {'status': 211, 'detail': 'Name changed success!'}
+     
+     
+     
+     @classmethod
+     async def delete_user_account(cls, name: str) -> dict:
+          async with cls.session.begin() as conn:
+               sttm = (
+                    delete(User).
+                    where(User.name == name)
+               )
+               await conn.execute(sttm)
+          return {'status': 215, 'detail': 'Account deleted success!'}
+
                
           
           
           
-regstr = Registration()
-check = Checkers()
+regstr = DataBase()
+check = DataCheckers()
